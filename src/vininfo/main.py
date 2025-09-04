@@ -50,3 +50,4 @@ def read_item(vin: str):
             return {"vin": vin, "details": basic, "success":False}
     else:
         return {"vin": vin, "basic": "VIN is not valid", "success":False}
+    

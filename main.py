@@ -1,54 +1,54 @@
-from fastapi import FastAPI, HTTPException
-from vininfo import Vin
-from vininfo.exceptions import ValidationError
+from fastapi import FastAPI
 
-app = FastAPI(
-    title="VIN Info API",
-    description="Extract detailed vehicle information from VIN numbers",
-    version="1.0.0"
+import click
+
+from vininfo import Vin
+app = FastAPI()
+
+import re
+
+from fastapi.middleware.cors import CORSMiddleware
+
+origins = [
+    "http://localhost:3000",
+    "http://localhost:3000/*",
+    "*",
+
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 @app.get("/")
-async def root():
-    return {"message": "VIN Info API - Use /vin/{vin_number} to decode VIN"}
+def read_root():
+    return {"Hello": "World"}
 
-@app.get("/vin/{vin_number}")
-async def get_vin_info(vin_number: str):
-    try:
-        vin = Vin(vin_number)
-        
-        # Get basic information
-        basic_info = vin.annotate()
-        
-        # Get detailed information if available
-        details_info = {}
-        if vin.details:
-            details_info = vin.details.annotate()
-        
-        return {
-            "basic": basic_info,
-            "details": details_info
-        }
-    except ValidationError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing VIN: {str(e)}")
 
-@app.get("/vin/{vin_number}/check")
-async def check_vin_checksum(vin_number: str):
-    try:
-        vin = Vin(vin_number)
-        is_valid = vin.verify_checksum()
+@app.get("/show/{vin}")
+def read_item(vin: str):
+    
+    vin_pattern = r'^[A-HJ-NPR-Z0-9]{17}$'
+    if re.fullmatch(vin_pattern, vin, re.IGNORECASE):
+        """Show information for VIN"""
+        num = Vin(vin)
+        basic = {}
+        details= {}
+        def out(annotatable):
+            for k, v in annotatable.annotate().items():
+                basic[k] = v
+            return basic
         
-        return {
-            "valid": is_valid,
-            "message": "Checksum is valid" if is_valid else "Checksum is not valid"
-        }
-    except ValidationError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing VIN: {str(e)}")
+        out(num)
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+        details = num.details
+        if details:
+            return {"vin": vin, "details": out(details), "success":True}
+        else:
+            return {"vin": vin, "details": basic, "success":False}
+    else:
+        return {"vin": vin, "basic": "VIN is not valid", "success":False}
