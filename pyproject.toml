@@ -10,7 +10,10 @@ license = "BSD-3-Clause"
 license-files = ["LICENSE"]
 requires-python = ">=3.10"
 keywords = ["vin", "vehicles"]
-dependencies = []
+dependencies = [
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/idlesign/vininfo"
